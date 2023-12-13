@@ -13,9 +13,9 @@ class UserController extends Controller
     /**
      * گرفتن لیست کاربران
      */
-    public function index()
+    public function index(): View
     {
-        if (Cache::has('users') && Cache::get('users')->count() === 0) {
+        if (Cache::has('users')) {
             Cache::forget('users');
         }
 
@@ -32,10 +32,11 @@ class UserController extends Controller
     /**
      * Delete user
      */
-    public function delete(User $user)
+    public function delete(User $user): RedirectResponse
     {
         $user->delete(); // remove item from database
 
+        // Check cache is empty or no
         if (Cache::get('users')->count() === 0) {
             Cache::forget('users');
 
@@ -72,8 +73,9 @@ class UserController extends Controller
     /**
      * Insert method for add new user
      */
-    public function update(Request $request, User $user)
+    public function update(Request $request, User $user): RedirectResponse
     {
+        // Check dont send data repetitious
         if (($request->name !== $user->name) || ($request->email !== $user->email)) {
             $user->update([
                 'name' => $request->name,
@@ -117,11 +119,12 @@ class UserController extends Controller
     private function updateCache($user): void
     {
         if (Cache::has('users')) {
+            // remove old user from cache and replace new user
             $newUsersList = Cache::get('users')->reject(function ($item) use ($user) {
                 return $item->id === $user->id;
             })->prepend($user, $user->id)->sortBy('id');
 
-            Cache::forever('users', $newUsersList);
+            Cache::forever('users', $newUsersList); // update cache again
         }
     }
 }
