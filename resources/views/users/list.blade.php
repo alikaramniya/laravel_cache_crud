@@ -4,7 +4,9 @@
 
 @section('content')
     @if ($listDeletedUsers)
-        <a href="{{ route('users.list.soft-deleted') }}">Anchor Text</a>
+        <div class="list-soft-deleted">
+            <a href="{{ route('users.list.soft-deleted') }}">list soft deleted users</a>
+        </div>
     @endif
     <table>
         <thead>
@@ -30,7 +32,9 @@
                     </td>
                 </tr>
             @empty
-                not found
+                <div style="color: red;width: 200px; font-size: 25px; margin:20px auto">
+                    list empty
+                </div>
             @endforelse
         </tbody>
     </table>
