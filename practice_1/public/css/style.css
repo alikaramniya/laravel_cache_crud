@@ -1,0 +1,54 @@
+* {
+    margin: 0;
+    padding: 0;
+    text-decoration: none;
+}
+
+body {
+    background-color: lightgray;
+}
+
+table {
+    width: 500px;
+    background-color: whitesmoke;
+    margin: 20px auto;
+    line-height: 30px;
+    padding: 10px;
+    color: white;
+}
+
+thead tr {
+    background-color: maroon;
+}
+
+tbody tr {
+    background-color: green;
+}
+
+th,
+td {
+    padding: 5px;
+}
+
+tbody a {
+    color: white;
+}
+
+.form {
+    background-color: green;
+    margin: 10px auto;
+    width: 400px;
+    text-align: center;
+    line-height: 2rem;
+}
+
+.form input {
+    width: 300px;
+    height: 40px;
+    margin: 5px 0;
+    outline: none;
+    border: none;
+    border-radius: 5px;
+    text-align: center;
+    font-size: 14px;
+}
