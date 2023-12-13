@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class UserController extends Controller
@@ -19,13 +20,18 @@ class UserController extends Controller
             Cache::forget('users');
         }
 
-        if (!Cache::has('users')) {
-            Cache::forever('users', User::orderBy('id')->get(['id', 'name', 'email']));
+        try {
+            if (!Cache::has('users')) {
+                $listDeletedUsers = User::onlyTrashed()->count();
+                Cache::forever('users', User::orderBy('id')->get(['id', 'name', 'email']));
+            }
+        } catch (\Exception) {
+            Log::error('در گرفتن لیست کابرهای موقت حذف شده یا گرفتن لیست کاربران بر مشگلی پیش آمده');
         }
 
         return view('users.list', [
             'users' => Cache::get('users'),
-            'listDeletedUsers' => User::onlyTrashed()->count()
+            'listDeletedUsers' => $listDeletedUsers
         ]);
     }
 
@@ -34,16 +40,22 @@ class UserController extends Controller
      */
     public function edit(int $id): View
     {
-        $user = null;
+        $userFromCache = null;
 
         if (Cache::has('users')) {
-            $user = Cache::get('users')->filter(function ($userItem) use ($id) {
+            $userFromCache = Cache::get('users')->filter(function ($userItem) use ($id) {
                 return $id === $userItem->id;
             })->first();
         }
 
+        try {
+            $userFromDb = User::find($id);
+        } catch (\Exception) {
+            Log::error('گرفتن کاربری با id {id} با مشگل مواجه شد', ['id' => $id]);
+        }
+
         return view('users.edit', [
-            'user' => $user ?? User::find($id)
+            'user' => $userFromCache ?? $userFromDb
         ]);
     }
 
@@ -54,10 +66,14 @@ class UserController extends Controller
     {
         // Check dont send data repetitious
         if (($request->name !== $user->name) || ($request->email !== $user->email)) {
-            $user->update([
-                'name' => $request->name,
-                'email' => $request->email
-            ]);
+            try {
+                $user->update([
+                    'name' => $request->name,
+                    'email' => $request->email
+                ]);
+            } catch (\Exception) {
+                Log::error('آپدیت اطلاعات کاربر با id {id}', ['id' => $user->id]);
+            }
 
             $this->updateCache($user);
         }
@@ -70,7 +86,11 @@ class UserController extends Controller
      */
     public function delete(User $user): RedirectResponse
     {
-        $user->delete(); // remove item from database
+        try {
+            $user->delete(); // remove item from database
+        } catch (\Exception) {
+            Log::info('کاربر با id {id} با موفقیت حذف نشد', ['id' => $user->id]);
+        }
 
         // Check cache is empty or no
         if (Cache::get('users')->count() === -1) {
