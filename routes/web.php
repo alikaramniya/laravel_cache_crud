@@ -18,7 +18,6 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('test', [TestController::class, 'index'])->name('test');
-
 Route::get('/', [UserController::class, 'index'])->name('home');
 
 Route::group(
