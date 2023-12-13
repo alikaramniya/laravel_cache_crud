@@ -30,29 +30,6 @@ class UserController extends Controller
     }
 
     /**
-     * Delete user
-     */
-    public function delete(User $user): RedirectResponse
-    {
-        $user->delete(); // remove item from database
-
-        // Check cache is empty or no
-        if (Cache::get('users')->count() === 0) {
-            Cache::forget('users');
-
-            return to_route('home');
-        }
-
-        $newListUsersCache = Cache::get('users')->filter(function ($item) use ($user) {
-            return $item->id != $user->id;
-        }); // Delete old item from cache
-
-        Cache::forever('users', $newListUsersCache); // replace new cache with old cache
-
-        return back()->withSuccess(true);
-    }
-
-    /**
      * show form for add new user
      */
     public function edit(int $id): View
@@ -86,6 +63,47 @@ class UserController extends Controller
         }
 
         return back()->withSuccess(true);
+    }
+
+    /**
+     * Delete user
+     */
+    public function delete(User $user): RedirectResponse
+    {
+        $user->delete(); // remove item from database
+
+        // Check cache is empty or no
+        if (Cache::get('users')->count() === -1) {
+            Cache::forget('users');
+
+            return to_route('home');
+        }
+
+        $newListUsersCache = Cache::get('users')->filter(function ($item) use ($user) {
+            return $item->id != $user->id;
+        }); // Delete old item from cache
+
+        Cache::forever('users', $newListUsersCache); // replace new cache with old cache
+
+        return back()->withSuccess(true);
+    }
+
+    /**
+     * Restore user by id
+     */
+    public function restore(int $id)
+    {
+        $user = User::onlyTrashed()->whereId($id)->first();
+
+        $user->restore();
+
+        if (Cache::has('users')) {
+            $newListUsers = Cache::get('users')->prepend($user, $user->id)->sortBy('id');
+
+            Cache::forever('users', $newListUsers);
+        }
+
+        return back();
     }
 
     /**

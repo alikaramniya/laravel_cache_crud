@@ -29,8 +29,9 @@ Route::group(
     ],
     function () {
         Route::delete('delete/{user}', 'delete')->name('delete');
-        Route::get('edit/{id}', 'edit')->name('edit');
         Route::patch('update/{user}', 'update')->name('update');
+        Route::get('edit/{id}', 'edit')->name('edit');
+        Route::get('restore/{id}', 'restore')->name('restore');
         Route::get('list-deleted-users', 'listSoftDeleted')->name('list.soft-deleted');
         Route::get('force-delete/{id}', 'forceDelete')->name('force.delete');
     }

@@ -8,6 +8,7 @@
             <tr>
                 <th>name</th>
                 <th>email</th>
+                <th>restore</th>
                 <th>force delete</th>
             </tr>
         </thead>
@@ -16,6 +17,7 @@
                 <tr>
                     <td>{{ $user->name }}</td>
                     <td>{{ $user->email }}</td>
+                    <td><a href="{{ route('users.restore', $user) }}">restore</a></td>
                     <td><a href="{{ route('users.force.delete', $user) }}">delete</a></td>
                 </tr>
             @empty
