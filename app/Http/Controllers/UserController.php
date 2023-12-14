@@ -28,7 +28,7 @@ class UserController extends Controller
                 $this->reGenerateCache();
             }
         } catch (\Exception) {
-            Log::error('در گرفتن لیست کابرهای موقت حذف شده یا گرفتن لیست کاربران بر مشگلی پیش آمده');
+            Log::error('در گرفتن لیست کابرهای موقت حذف شده یا گرفتن لیست کاربران مشگلی پیش آمده');
         }
 
         return view('users.list', [
