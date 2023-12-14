@@ -16,14 +16,16 @@ class UserController extends Controller
      */
     public function index(): View
     {
-        if (Cache::has('users')) {
+        // Check the cache is emtpy or now
+        if (Cache::has('users') && Cache::get('users')->count === 0) {
             Cache::forget('users');
         }
 
         try {
             if (!Cache::has('users')) {
                 $listDeletedUsers = User::onlyTrashed()->count();
-                Cache::forever('users', User::orderBy('id')->get(['id', 'name', 'email']));
+
+                $this->reGenerateCache();
             }
         } catch (\Exception) {
             Log::error('در گرفتن لیست کابرهای موقت حذف شده یا گرفتن لیست کاربران بر مشگلی پیش آمده');
@@ -113,14 +115,20 @@ class UserController extends Controller
      */
     public function restore(int $id)
     {
-        $user = User::onlyTrashed()->whereId($id)->first();
+        try {
+            $user = User::onlyTrashed()->whereId($id)->first();
 
-        $user->restore();
+            $user->restore();
+        } catch (\Exception) {
+            Log::error('کاربر با موفقیت از لیست حذف شده ها برگشت نخورد');
+        }
 
         if (Cache::has('users')) {
-            $newListUsers = Cache::get('users')->prepend($user, $user->id)->sortBy('id');
+            $this->pushInCache($user);
+        } else {
+            $this->reGenerateCache();
 
-            Cache::forever('users', $newListUsers);
+            return $this->restore($id);
         }
 
         return back();
@@ -131,7 +139,11 @@ class UserController extends Controller
      */
     public function listSoftDeleted(): View|RedirectResponse
     {
-        $users = User::onlyTrashed()->get();
+        try {
+            $users = User::onlyTrashed()->get();
+        } catch (\Exception) {
+            Log::error('در گرفتن لیست کاربران موقت حذف شده مشگلی به وجود امد');
+        }
 
         if ($users->count() === 0) {
             return to_route('home');
@@ -154,15 +166,39 @@ class UserController extends Controller
         return back();
     }
 
+    /**
+     * Update the cache for remove old cache and replace new cache
+     */
     private function updateCache($user): void
     {
         if (Cache::has('users')) {
             // remove old user from cache and replace new user
             $newUsersList = Cache::get('users')->reject(function ($item) use ($user) {
                 return $item->id === $user->id;
-            })->prepend($user, $user->id)->sortBy('id');
+            })->prepend($user, $user->id)->sortBy('id'); // insert new cache
 
             Cache::forever('users', $newUsersList); // update cache again
         }
+    }
+
+    /**
+     * Re-generate the cache for get fresh data
+     */
+    private function reGenerateCache(): void
+    {
+        try {
+            Cache::forever('users', User::orderBy('id')->get(['id', 'name', 'email']));
+        } catch (\Exception) {
+            Log::errro('گرفتن لیست کاربران با مشگل مواجه شده');
+        }
+    }
+    /**
+     * Shift new data in cache
+     */
+    private function pushInCache($user): void
+    {
+        $newListUsers = Cache::get('users')->prepend($user, $user->id)->sortBy('id');
+
+        Cache::forever('users', $newListUsers);
     }
 }
