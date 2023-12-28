@@ -17,13 +17,14 @@ class UserController extends Controller
     public function index(): View
     {
         // Check the cache is emtpy or now
-        if (Cache::has('users') && Cache::get('users')->count === 0) {
+        if (Cache::has('users') && Cache::get('users')->count() === 0) {
             Cache::forget('users');
         }
 
         try {
-            if (!Cache::has('users')) {
-                $listDeletedUsers = User::onlyTrashed()->count();
+            $listDeletedUsers = User::onlyTrashed()->count();
+
+            if (! Cache::has('users')) {
 
                 $this->reGenerateCache();
             }
@@ -33,7 +34,7 @@ class UserController extends Controller
 
         return view('users.list', [
             'users' => Cache::get('users'),
-            'listDeletedUsers' => $listDeletedUsers
+            'listDeletedUsers' => $listDeletedUsers,
         ]);
     }
 
@@ -58,7 +59,7 @@ class UserController extends Controller
         }
 
         return view('users.edit', [
-            'user' => $userFromCache ?? $userFromDb
+            'user' => $userFromCache ?? $userFromDb,
         ]);
     }
 
@@ -72,7 +73,7 @@ class UserController extends Controller
             try {
                 $user->update([
                     'name' => $request->name,
-                    'email' => $request->email
+                    'email' => $request->email,
                 ]);
             } catch (\Exception) {
                 Log::error('آپدیت اطلاعات کاربر با id {id}', ['id' => $user->id]);
@@ -160,7 +161,7 @@ class UserController extends Controller
     {
         User::onlyTrashed()->whereId($id)->forceDelete();
 
-        if (!User::onlyTrashed()->count()) {
+        if (! User::onlyTrashed()->count()) {
             return to_route('home');
         }
 
@@ -173,9 +174,10 @@ class UserController extends Controller
     private function updateCache($user): void
     {
         if (Cache::has('users')) {
-            $newUsersList = Cache::get('users')->forget(
-                Cache::get('users')->find($user->id)
-            )->prepend($user, $user->id)->sortBy('id');
+            $oldUser = Cache::get('users')->find($user->id);
+
+            $newUsersList = Cache::get('users')->forget($oldUser)
+                ->prepend($user, $user->id)->sortBy('id');
 
             Cache::forever('users', $newUsersList); // update cache again
         }
@@ -192,6 +194,7 @@ class UserController extends Controller
             Log::errro('گرفتن لیست کاربران با مشگل مواجه شده');
         }
     }
+
     /**
      * Shift new data in cache
      */
