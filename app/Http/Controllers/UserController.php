@@ -45,9 +45,10 @@ class UserController extends Controller
         $userFromCache = null;
 
         if (Cache::has('users')) {
-            $userFromCache = Cache::get('users')->filter(function ($userItem) use ($id) {
-                return $id === $userItem->id;
-            })->first();
+            // $userFromCache = Cache::get('users')->filter(function ($userItem) use ($id) {
+            //     return $id === $userItem->id;
+            // })->first();
+            $userFromCache = Cache::get('users')->find($id);
         }
 
         try {
@@ -172,10 +173,9 @@ class UserController extends Controller
     private function updateCache($user): void
     {
         if (Cache::has('users')) {
-            // remove old user from cache and replace new user
-            $newUsersList = Cache::get('users')->reject(function ($item) use ($user) {
-                return $item->id === $user->id;
-            })->prepend($user, $user->id)->sortBy('id'); // insert new cache
+            $newUsersList = Cache::get('users')->forget(
+                Cache::get('users')->find($user->id)
+            )->prepend($user, $user->id)->sortBy('id');
 
             Cache::forever('users', $newUsersList); // update cache again
         }
